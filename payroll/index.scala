@@ -10,6 +10,8 @@ object Payroll {
     val mike = Employee(Name("Mike", "Tyson"), 50_000)
     val louis = Employee(Name("Louis", "Smith"), 80_000)
 
+    val employees = List(john, mike, louis)
+
     val payrollCalculator = rules { employee =>
       employee salary_for 2.weeks minus_deductions_for { gross =>
         federalIncomeTax is (25.0 percent_of gross)
@@ -19,7 +21,7 @@ object Payroll {
       }
     }
 
-    List(john, mike, louis).foreach(e => 
+    employees.foreach(e => 
       println(s"${e.name}: ${payrollCalculator(e)}")
     )
   }

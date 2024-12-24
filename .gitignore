@@ -1,5 +1,5 @@
-.bsp
-.metals
-.scala-build
-.vscode
-*.class
+*
+!.gitignore
+!*.scala
+!build.sbt
+!*/
