@@ -1,5 +1,6 @@
 *
 !.gitignore
 !*.scala
+!*.csv
 !build.sbt
 !*/
