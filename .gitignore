@@ -2,5 +2,6 @@
 !.gitignore
 !*.scala
 !*.csv
+!*.test
 !build.sbt
 !*/
