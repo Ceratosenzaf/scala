@@ -1,47 +1,48 @@
 package arnoldC
 
 import scala.util.parsing.combinator._
+import arnoldC._
 
 class ArnoldCParser extends JavaTokenParsers {
-  def program = "IT'S" ~> "SHOWTIME" ~> programBody <~ "YOU" <~ "HAVE" <~ "BEEN" <~ "TERMINATED" ^^ { res => println(s"program $res"); res }
-  def programBody = rep(exp) ^^ { x => val res = s"body { ${x.mkString("; ")} }"; println(res); res }
+  val interpreter = new ArnoldCInterpreter
 
-  def exp: Parser[Any] = printing | declaration | assignment | operation | ifThenElse | loop ^^ { res => println(res); res }
-  def operation = arithmeticOperation | logicalOperation
-  def opOrIntOrVar = operation | int | variable
+  def program: Parser[Unit] = "IT'S" ~> "SHOWTIME" ~> programBody <~ "YOU" <~ "HAVE" <~ "BEEN" <~ "TERMINATED" ^^ { interpreter.exec }
+  def programBody: Parser[Block] = rep(exp) ^^ { Block }
 
-  def printing = "TALK" ~> "TO" ~> "THE" ~> "HAND" ~> opOrIntOrVar ^^ {
-    case x => val res = s"print $x"; println(res); res
+  def exp: Parser[Exp] = printing | declaration | assignment | operation | ifThenElse | loop
+  def operation: Parser[Op] = arithmeticOperation | logicalOperation
+  def intOrVar: Parser[ExpWithValue] = int | variable
+
+  def printing: Parser[Print] = "TALK" ~> "TO" ~> "THE" ~> "HAND" ~> intOrVar ^^ { Print }
+
+  def declaration: Parser[Declare] = ("HEY" ~> "CHRISTMAS" ~> "TREE" ~> variable) ~ ("YOU" ~> "SET" ~> "US" ~> "UP" ~> intOrVar) ^^ {
+    case x~v => Declare(x, v)
+  }
+  
+  def assignment: Parser[Set] = ("GET" ~> "TO" ~> "THE" ~> "CHOPPER" ~> variable) ~ ("HERE" ~> "IS" ~> "MY" ~> "INVITATION" ~> intOrVar) ~ (opt(operation) <~ "ENOUGH" <~ "TALK") ^^ {
+    case x~init~rest => Set(x, init, rest.getOrElse(Add(Value(0))))
+  }
+  
+  def arithmeticOperation: Parser[Op] = add | sub | mul | div
+  def add: Parser[Add] = "GET" ~> "UP" ~> intOrVar ^^ { Add }
+  def sub: Parser[Sub] = "GET" ~> "DOWN" ~> intOrVar ^^ { Sub }
+  def mul: Parser[Mul] = "YOU'RE" ~> "FIRED" ~> intOrVar ^^ { Mul }
+  def div: Parser[Div] = "HE" ~> "HAD" ~> "TO" ~> "SPLIT" ~> intOrVar ^^ { Div }
+  
+  def logicalOperation: Parser[Op] = eq | gr8 | and | or
+  def eq: Parser[Eq] = "YOU" ~> "ARE" ~> "NOT" ~> "YOU" ~> "YOU" ~> "ARE" ~> "ME" ~> intOrVar ^^ { Eq }
+  def gr8: Parser[Gr8] = "LET" ~> "OFF" ~> "SOME" ~> "STEAM" ~> "BENNET" ~> intOrVar ^^ { Gr8 }
+  def and: Parser[And] = "KNOCK" ~> "KNOCK" ~> intOrVar ^^ { And }
+  def or: Parser[Or] = "CONSIDER" ~> "THAT" ~> "A" ~> "DIVORCE" ~> intOrVar ^^ { Or }
+  
+  def ifThenElse: Parser[IfThenElse] = ("BECAUSE" ~> "I'M" ~> "GOING" ~> "TO" ~> "SAY" ~> "PLEASE" ~> variable) ~ programBody ~ ("BULLSHIT" ~> programBody <~ "YOU" <~ "HAVE" <~ "NO" <~ "RESPECT" <~ "FOR" <~ "LOGIC") ^^ {
+    case x~t~f => IfThenElse(x, t, f)
+  }
+  
+  def loop: Parser[Loop] = ("STICK" ~> "AROUND" ~> variable <~ "[") ~ (programBody <~ "]" <~ "CHILL") ^^ {
+    case x ~ body => Loop(x, body)
   }
 
-  def declaration = ("HEY" ~> "CHRISTMAS" ~> "TREE" ~> variable) ~ ("YOU" ~> "SET" ~> "US" ~> "UP" ~> int) ^^ {
-    case x~v => val res = s"declare $x = $v"; println(res); res
-  }
-  
-  def assignment = ("GET" ~> "TO" ~> "THE" ~> "CHOPPER" ~> variable) ~ ("HERE" ~> "IS" ~> "MY" ~> "INVITATION" ~> opOrIntOrVar) ~ ( opOrIntOrVar <~ "ENOUGH" <~ "TALK") ^^ {
-    case x~init~rest => val res = s"set $x = $init $rest"; println(res); res
-  }
-  
-  def arithmeticOperation = add | sub | mul | div
-  def add = "GET" ~> "UP" ~> opOrIntOrVar ^^ { b => val res = s" + $b"; println(res); res }
-  def sub = "GET" ~> "DOWN" ~> opOrIntOrVar ^^ { b => val res = s" - $b"; println(res); res }
-  def mul = "YOU'RE" ~> "FIRED" ~> opOrIntOrVar ^^ { b => val res = s" * $b"; println(res); res }
-  def div = "HE" ~> "HAD" ~> "TO" ~> "SPLIT" ~> opOrIntOrVar ^^ { b => val res = s" / $b"; println(res); res }
-  
-  def logicalOperation = eq | gr8 | and | or
-  def eq = "YOU" ~> "ARE" ~> "NOT" ~> "YOU" ~> "YOU" ~> "ARE" ~> "ME" ~> opOrIntOrVar ^^ { b => val res = s" == $b"; println(res); res }
-  def gr8 = "LET" ~> "OFF" ~> "SOME" ~> "STEAM" ~> "BENNET" ~> opOrIntOrVar ^^ { b => val res = s" > $b"; println(res); res }
-  def and = "KNOCK" ~> "KNOCK" ~> opOrIntOrVar ^^ { b => val res = s" && $b"; println(res); res }
-  def or = "CONSIDER" ~> "THAT" ~> "A" ~> "DIVORCE" ~> opOrIntOrVar ^^ { b => val res = s" || $b"; println(res); res }
-  
-  def ifThenElse = ("BECAUSE" ~> "I'M" ~> "GOING" ~> "TO" ~> "SAY" ~> "PLEASE" ~> variable) ~ exp ~ ("BULLSHIT" ~> exp <~ "YOU" <~ "HAVE" <~ "NO" <~ "RESPECT" <~ "FOR" <~ "LOGIC") ^^ {
-    case x~t~f => val res = s"if $x is true(0) run $t else run $f"; println(res); res
-  }
-  
-  def loop = ("STICK" ~> "AROUND" ~> variable <~ "[") ~ (programBody <~ "]" <~ "CHILL") ^^ {
-    case x ~ body => val res = s"as long as $x is true (0) run $body"; println(res); res
-  }
-
-  def variable = ident ^^ { x => val res = s"variable $x"; println(res); res }
-  def int = wholeNumber ^^ { x => val res = s"int $x"; println(res); res }
+  def variable: Parser[Variable] = ident ^^ { Variable }
+  def int: Parser[Value] = wholeNumber ^^ { x => Value(x.toInt) }
 }
