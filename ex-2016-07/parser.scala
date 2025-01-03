@@ -4,17 +4,19 @@ import scala.util.parsing.combinator._
 import wtf._
 
 class WtfParser extends JavaTokenParsers {
-  val interpreter = new WtfInterpreter(Seq[Int]())
+  val interpreter = new WtfInterpreter
 
-  def program = fnBlock ~ codeBlock ^^ { case f~c => interpreter.exec(Block(List(f,c))) }
+  def program = fnBlock ~ codeBlockWithoutBrackets ^^ { case f~c => interpreter.exec(f,c) }
 
   def fnBlock: Parser[Block] = rep(fnDef) ^^ { Block }
 
-  def fnDef: Parser[FnDef] = ("def" ~> fnName) ~ (int <~ "=") ~ codeBlock ^^ {
+  def fnDef: Parser[FnDef] = ("def" ~> fnName) ~ (int <~ "=") ~ codeBlockWithBrackets ^^ {
     case n~p~b => FnDef(n,p,b)
   }
 
-  def codeBlock: Parser[Block] = (("[" ~> rep(exp) <~ "]") | rep(exp)) ^^ { Block }
+  def codeBlock: Parser[Block] = codeBlockWithBrackets | codeBlockWithoutBrackets
+  def codeBlockWithBrackets: Parser[Block] = "[" ~> rep(exp) <~ "]" ^^ { Block }
+  def codeBlockWithoutBrackets: Parser[Block] = rep(exp) ^^ { Block }
 
   def exp: Parser[Exp] = op | value | print | ifThenElse | fnCall | fnParam
 
@@ -23,7 +25,7 @@ class WtfParser extends JavaTokenParsers {
 
   def print: Parser[Print] = "!" ^^ { _ => Print() }
 
-  def ifThenElse: Parser[IfThenElse] = ("?" ~> codeBlock) ~ (":" ~> codeBlock) ^^ {
+  def ifThenElse: Parser[IfThenElse] = ("?" ~> codeBlockWithBrackets) ~ (":" ~> codeBlockWithBrackets) ^^ {
     case t~f => IfThenElse(t,f)
   }
 
