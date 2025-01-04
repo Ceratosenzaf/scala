@@ -5,10 +5,19 @@ import scala.collection.mutable.{Map, Stack}
 import lab2_2.Expr
 
 class ExprParser extends JavaTokenParsers {
-  var variables: Map[String, Expr] = Map()
+  val variables = Map[String, Expr]()
   val stack = new Stack[Expr]()
+  val newLine = sys.props("line.separator")
 
-  def calculator = repsep(exprLine, ",") ^^ { lines => (lines, variables) }
+  def calculator = rep(rawExprLine) ^^ { lines => (lines, variables) }
+
+  def rawExprLine = s""".*$newLine""".r ^^ { x =>
+    parseAll(exprLine, x.replace(newLine, "")) match {
+      case Success(result, _) => result
+      case failure : NoSuccess => throw new Exception(failure.msg)
+    }
+  }
+
   def exprLine: Parser[Expr] = rep(expr) ^^ { _.last }
   def expr: Parser[Expr] = declaration | evaluation | value
   

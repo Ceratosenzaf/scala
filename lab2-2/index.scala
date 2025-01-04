@@ -9,12 +9,12 @@ object Lab2_2 {
 
     val exprCalculator = 
       """
-      B = 1 + 2 * 3,
-      A = B,
-      C = D = 2 * A,
-      E = A * 2,
-      F = B + C + D + E,
-      G = sqrt A + 1,
+      B = 1 + 2 * 3
+      A = B
+      C = D = 2 * A
+      E = A * 2
+      F = B + C + D + E
+      G = sqrt A + 1
       G ^ 2
       """
 
