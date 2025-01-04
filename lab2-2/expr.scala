@@ -10,6 +10,8 @@ class Expr(val value: Double) {
   def sin: Expr = new Expr(Math.sin(value))
   def cos: Expr = new Expr(Math.cos(value))
   def tan: Expr = new Expr(Math.tan(value))
+
+  override def toString = f"$value%.2f"
 }
 
 object Expr {

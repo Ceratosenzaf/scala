@@ -1,42 +1,39 @@
 package lab2_2
 
 import scala.util.parsing.combinator._
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Map, Stack}
 import lab2_2.Expr
 
 class ExprParser extends JavaTokenParsers {
   var variables: Map[String, Expr] = Map()
+  val stack = new Stack[Expr]()
 
-  def calculator: Parser[List[Expr]] = repsep(expr, ",") ^^ { items => {
-    println("Variables: " + variables)
-    println("Items: " + items)
-    items
-  } }
+  def calculator = repsep(rep(expr), ",") ^^ { lines => (lines.map(_.last), variables) }
   def expr: Parser[Expr] = declaration | evaluation | value
   
-  def declaration: Parser[Expr] = var_declaration ~ expr ^^ {
-    case x ~ v => {
-      variables(x) = v
-      v
+  def declaration: Parser[Expr] = (stringLiteral <~ "=") ~ rep(expr) ^^ {
+    case x ~ _ => {
+      variables(x) = stack.top
+      stack.top
     }
   }
-  def var_declaration: Parser[String] = stringLiteral <~ "="
 
   def evaluation: Parser[Expr] = opDouble | opSingle | variable
   def opDouble: Parser[Expr] = add | mult | rem | div | pow
-  def add: Parser[Expr] = expr ~ "+" ~ expr ^^ { case a ~ op ~ b => a + b }
-  def mult: Parser[Expr] = expr ~ "*" ~ expr ^^ { case a ~ op ~ b => a * b }
-  def rem: Parser[Expr] = expr ~ "-" ~ expr ^^ { case a ~ op ~ b => a - b }
-  def div: Parser[Expr] = expr ~ "/" ~ expr ^^ { case a ~ op ~ b => a / b }
-  def pow: Parser[Expr] = expr ~ "^" ~ expr ^^ { case a ~ op ~ b => a ^ b }
+  def add: Parser[Expr] = "+" ~> expr ^^ { _ => stack.push(stack.pop + stack.pop).top }
+  def mult: Parser[Expr] = "*" ~> expr ^^ { _ => stack.push(stack.pop * stack.pop).top }
+  def rem: Parser[Expr] = "-" ~> expr ^^ { _ => stack.push(stack.pop - stack.pop).top }
+  def div: Parser[Expr] = "/" ~> expr ^^ { _ => stack.push(stack.pop / stack.pop).top }
+  def pow: Parser[Expr] = "^" ~> expr ^^ { _ => stack.push(stack.pop ^ stack.pop).top }
   def opSingle: Parser[Expr] = sqrt | sin | cos | tan
-  def sqrt: Parser[Expr] = "sqrt" ~> expr ^^ { _.sqrt }
-  def sin: Parser[Expr] = "sin" ~> expr ^^ { _.sin }
-  def cos: Parser[Expr] = "cos" ~> expr ^^ { _.cos }
-  def tan: Parser[Expr] = "tan" ~> expr ^^ { _.tan }
-  def variable: Parser[Expr] = stringLiteral ^^ { variables(_) }
+  def sqrt: Parser[Expr] = "sqrt" ~> expr ^^ { _ => stack.push(stack.pop.sqrt).top }
+  def sin: Parser[Expr] = "sin" ~> expr ^^ { _ => stack.push(stack.pop.sin).top }
+  def cos: Parser[Expr] = "cos" ~> expr ^^ { _ => stack.push(stack.pop.cos).top }
+  def tan: Parser[Expr] = "tan" ~> expr ^^ { _ => stack.push(stack.pop.tan).top }
+  
+  def variable: Parser[Expr] = stringLiteral ^^ { x => stack.push(variables(x)).top }
  
-  def value: Parser[Expr] = dec | float
-  def dec: Parser[Expr] = wholeNumber ^^ { x => Expr(x.toInt) }
-  def float: Parser[Expr] = floatingPointNumber ^^ { x => Expr(x.toDouble) }
+  def value: Parser[Expr] = int | float
+  def int: Parser[Expr] = wholeNumber ^^ { x => stack.push(Expr(x.toInt)).top }
+  def float: Parser[Expr] = floatingPointNumber ^^ { x => stack.push(Expr(x.toDouble)).top }
 }

@@ -1,6 +1,6 @@
 package lab2_2
 
-import lab2_2.ExprParser
+import lab2_2._
 
 object Lab2_2 {
   def main(args: Array[String]): Unit = {
@@ -11,13 +11,16 @@ object Lab2_2 {
       """
       "B" = 1 + 2 * 3,
       "A" = "B",
-      "A" + "B"
+      "C" = "D" = 2 * "A",
+      "E" = "A" * 2,
+      "F" = "B" + "C" + "D" + "E",
+      "G" = sqrt "A" + 1,
+      "G" ^ 2
       """
 
     parser.parseAll(parser.calculator, exprCalculator) match {
-      case parser.Success(result, _) => println(result)
-      case parser.Failure(msg, _) => println("Failure: " + msg)
-      case parser.Error(msg, _) => println("Error: " + msg)
+      case parser.Success((l,v), _) => println(s"Results line by line: $l\nVariables: $v")
+      case e => println(e)
     }
   }
 }
